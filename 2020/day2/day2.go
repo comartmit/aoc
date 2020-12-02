@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/comartmit/aoc/lib"
 )
@@ -12,29 +13,37 @@ import (
 var pws []password
 
 func main() {
-	fmt.Println(part1(pws))
-}
-
-func part1(pws []password) (rc int) {
+	var p1v, p2v int
 	for _, pw := range pws {
-		if pw.valid() {
-			rc++
+		if pw.validPart1() {
+			p1v++
+		}
+		if pw.validPart2() {
+			p2v++
 		}
 	}
-	return
+	fmt.Printf("Part1: %v\n", p1v)
+	fmt.Printf("Part2: %v\n", p2v)
+
 }
 
 type password struct {
-	char string
-	min  int
-	max  int
-	pw   string
+	char  string
+	lower int
+	upper int
+	pw    string
 }
 
-func (p password) valid() bool {
-	pattern := regexp.MustCompile(p.char)
-	matches := len(pattern.FindAllString(p.pw, -1))
-	return p.min <= matches && matches <= p.max
+func (p password) validPart1() bool {
+	count := strings.Count(p.pw, p.char)
+	return p.lower <= count && count <= p.upper
+}
+
+func (p password) validPart2() bool {
+	v1 := string(p.pw[p.lower-1]) == p.char
+	v2 := string(p.pw[p.upper-1]) == p.char
+
+	return (v1 && !v2) || (!v1 && v2)
 }
 
 var pwre = regexp.MustCompile(`(\d+)-(\d+) (\w): (\w+)$`)
@@ -50,10 +59,10 @@ func init() {
 		min, _ := strconv.Atoi(v[1])
 		max, _ := strconv.Atoi(v[2])
 		pws[i] = password{
-			char: v[3],
-			min:  min,
-			max:  max,
-			pw:   v[4],
+			char:  v[3],
+			lower: min,
+			upper: max,
+			pw:    v[4],
 		}
 	}
 }
