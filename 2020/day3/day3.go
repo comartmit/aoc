@@ -8,22 +8,46 @@ import (
 // grid contains a finite set of rows, whereas each row is an arbitrarily long set of values
 var grid []row
 
-func main() {
-	fmt.Printf("Part 1: %v\n", traverseTrees(grid, 1, 3))
+type pattern struct {
+	descent int
+	run     int
 }
 
-func traverseTrees(grid []row, descent, run int) (t int) {
+func main() {
+	fmt.Printf("Part 1: %v\n", traverseTrees(grid, pattern{descent: 1, run: 3}))
+	fmt.Printf("Part 2: %v\n", part2(grid,
+		pattern{descent: 1, run: 1},
+		pattern{descent: 1, run: 3},
+		pattern{descent: 1, run: 5},
+		pattern{descent: 1, run: 7},
+		pattern{descent: 2, run: 1}))
+}
+
+func traverseTrees(grid []row, p pattern) (t int) {
 	i, j := 0, 0
 
 	for i < len(grid) {
 		if grid[i].isTree(j) {
 			t++
 		}
-		i += descent
-		j += run
+		i += p.descent
+		j += p.run
+
 	}
 
 	return t
+}
+
+func part2(grid []row, ps ...pattern) (t int) {
+	if len(ps) == 0 {
+		return
+	}
+
+	t = 1 // identity
+	for _, p := range ps {
+		t *= traverseTrees(grid, p)
+	}
+	return
 }
 
 type row string
