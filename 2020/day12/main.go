@@ -10,20 +10,32 @@ import (
 )
 
 func main() {
-	fmt.Printf("part 1: %v\n", part1(ship{}, input))
+	fmt.Printf("part 1: %v\n", navigate(ship{}, input, Part1))
+	fmt.Printf("part 2: %v\n", navigate(ship{wp: waypoint{nspos: 1, ewpos: 10}}, input, Part2))
+}
+
+type waypoint struct {
+	ewpos, nspos int
+}
+
+func (wp *waypoint) pivot90() {
+	x, y := wp.ewpos, wp.nspos
+	wp.ewpos = -y
+	wp.nspos = x
 }
 
 type ship struct {
+	wp                waypoint
 	ewpos, nspos, dir int
 }
 
 var instructRE = regexp.MustCompile(`^(N|S|E|W|L|R|F)(\d+)$`)
 
-func (s *ship) Move(i string) {
-	mod := func(a, b int) int {
-		return (a%b + b) % b
-	}
+func pyModulo(a, b int) int {
+	return (a%b + b) % b
+}
 
+func Part1(s *ship, i string) {
 	inst := instructRE.FindStringSubmatch(strings.Trim(i, ""))
 	if len(inst) == 0 {
 		log.Fatal(i)
@@ -40,9 +52,9 @@ func (s *ship) Move(i string) {
 	case "W":
 		s.ewpos -= q
 	case "L":
-		s.dir = mod(s.dir+q, 360)
+		s.dir = pyModulo(s.dir+q, 360)
 	case "R":
-		s.dir = mod(s.dir-q, 360)
+		s.dir = pyModulo(s.dir-q, 360)
 	case "F":
 		rad := math.Pi * float64(s.dir) / 180.0
 		ydif, xdif := float64(q)*math.Sin(rad), float64(q)*math.Cos(rad)
@@ -51,9 +63,39 @@ func (s *ship) Move(i string) {
 	}
 }
 
-func part1(s ship, instructions string) (t int) {
+func Part2(s *ship, i string) {
+	inst := instructRE.FindStringSubmatch(strings.Trim(i, ""))
+	if len(inst) == 0 {
+		log.Fatal(i)
+	}
+	q, _ := strconv.Atoi(inst[2])
+
+	switch inst[1] {
+	case "N":
+		s.wp.nspos += q
+	case "S":
+		s.wp.nspos -= q
+	case "E":
+		s.wp.ewpos += q
+	case "W":
+		s.wp.ewpos -= q
+	case "L":
+		for q = pyModulo(q, 360); q > 0; q -= 90 {
+			s.wp.pivot90()
+		}
+	case "R":
+		for q = pyModulo(-q, 360); q > 0; q -= 90 {
+			s.wp.pivot90()
+		}
+	case "F":
+		s.ewpos += q * s.wp.ewpos
+		s.nspos += q * s.wp.nspos
+	}
+}
+
+func navigate(s ship, instructions string, f func(*ship, string)) (t int) {
 	for _, i := range strings.Split(instructions, "\n") {
-		s.Move(i)
+		f(&s, i)
 	}
 
 	if s.ewpos < 0 {
