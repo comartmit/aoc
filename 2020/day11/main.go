@@ -6,22 +6,32 @@ import (
 )
 
 func main() {
-	fmt.Printf("part 1: %v\n", part1(input))
+	fmt.Printf("part 1: %v\n", loop(input, partOne))
+	fmt.Printf("part 2: %v\n", loop(input, partTwo))
 }
 
-func part1(input string) (t int) {
+func loop(input string, f func(int, seat, [][]seat) bool) (t int) {
 	seats := load(input)
 	round := 1
 
-	// step until seats stop changing
+	// loop until seats stop changing
 	for {
 		var changed int
 
 		for _, r := range seats {
-			for _, s := range r {
-				if s.step(round, seats) {
+			for i, s := range r {
+				if s.isFloor {
+					continue
+				}
+
+				previous := s.isOccupied
+				s.isOccupied = f(round, s, seats)
+				if previous != s.isOccupied {
 					changed++
 				}
+				s.previouslyOccupied = previous
+				s.round = round
+				r[i] = s
 			}
 		}
 
@@ -44,40 +54,74 @@ func part1(input string) (t int) {
 	return
 }
 
+var directions = []struct {
+	xdif, ydif int
+}{
+	{0, -1},
+	{0, 1},
+	{1, -1},
+	{1, 0},
+	{1, 1},
+	{-1, -1},
+	{-1, 0},
+	{-1, 1},
+}
+
 type seat struct {
 	round                                   int
 	xpos, ypos                              int
 	isFloor, isOccupied, previouslyOccupied bool
 }
 
-func (s *seat) step(round int, seats [][]*seat) (changed bool) {
-	defer func() { s.round = round }()
-
-	if s.isFloor {
-		return
-	}
-
-	// preserve state
-	s.previouslyOccupied = s.isOccupied
-
-	var occupied int
-	for row := s.ypos - 1; row <= s.ypos+1; row++ {
-		for pos := s.xpos - 1; pos <= s.xpos+1; pos++ {
-			if row >= 0 && row < len(seats) && pos >= 0 && pos < len(seats[0]) && !(pos == s.xpos && row == s.ypos) {
-				if seats[row][pos].getOccupied(round) {
-					occupied += 1
-				}
-			}
+func partOne(round int, s seat, seats [][]seat) bool {
+	var numOccupied int
+	for _, direction := range directions {
+		row, pos := s.ypos+direction.ydif, s.xpos+direction.xdif
+		if row < 0 || row >= len(seats) || pos < 0 || pos >= len(seats[0]) {
+			continue
+		}
+		if seats[row][pos].getOccupied(round) {
+			numOccupied += 1
 		}
 	}
-	if s.isOccupied && occupied >= 4 {
-		s.isOccupied, changed = false, true
+	if s.isOccupied && numOccupied >= 4 {
+		return false
 	}
-	if !s.isOccupied && occupied == 0 {
-		s.isOccupied, changed = true, true
+	if !s.isOccupied && numOccupied == 0 {
+		return true
 	}
 
-	return
+	return s.isOccupied
+}
+
+func partTwo(round int, s seat, seats [][]seat) bool {
+	var numOccupied int
+	for _, direction := range directions {
+		row, pos := s.ypos, s.xpos
+		for {
+			row, pos = row+direction.ydif, pos+direction.xdif
+			if row < 0 || row >= len(seats) || pos < 0 || pos >= len(seats[0]) {
+				break
+			}
+			_s := seats[row][pos]
+			if _s.isFloor {
+				continue
+			}
+
+			if seats[row][pos].getOccupied(round) {
+				numOccupied++
+			}
+			break
+		}
+	}
+	if s.isOccupied && numOccupied >= 5 {
+		return false
+	}
+	if !s.isOccupied && numOccupied == 0 {
+		return true
+	}
+
+	return s.isOccupied
 }
 
 func (s seat) getOccupied(currentRound int) bool {
@@ -89,11 +133,11 @@ func (s seat) getOccupied(currentRound int) bool {
 	return s.isOccupied
 }
 
-func load(input string) (seats [][]*seat) {
+func load(input string) (seats [][]seat) {
 	rows := strings.Split(input, "\n")
-	seats = make([][]*seat, len(rows))
+	seats = make([][]seat, len(rows))
 	for i, _row := range rows {
-		row := make([]*seat, len(_row))
+		row := make([]seat, len(_row))
 		for j, _s := range _row {
 			s := seat{
 				xpos: j,
@@ -105,7 +149,7 @@ func load(input string) (seats [][]*seat) {
 			case '#':
 				s.isOccupied = true
 			}
-			row[j] = &s
+			row[j] = s
 		}
 		seats[i] = row
 	}
