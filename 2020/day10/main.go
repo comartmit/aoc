@@ -52,6 +52,7 @@ func part2(inputs []int) (t int) {
 		return t
 	}
 
+	// We can ignore the terminal device adapter because it is a constant part of the combination
 	return iterate(0, inputs)
 
 }
