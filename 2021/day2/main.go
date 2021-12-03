@@ -21,7 +21,6 @@ func main(){
 	}
 	fmt.Printf("part 1: %v\n", partOne(instructions))
 	fmt.Printf("part 2: %v\n", partTwo(instructions))
-
 }
 
 func partOne(instructions []instruction) int64{
