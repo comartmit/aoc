@@ -29,7 +29,7 @@ func partTwo() int64 {
 
 func init() {
 	ins := strings.Split(_input, "\n")
-	input := make([]instruction, len(ins))
+	input = make([]instruction, len(ins))
 	for i, v := range ins {
 		input[i] = parseInstruction(v)
 	}
